@@ -36,7 +36,8 @@ import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.networktables.NetworkTableEntry;
+import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -79,6 +80,11 @@ public class SwerveSubsystem extends SubsystemBase
    * Enable vision odometry updates while driving.
    */
   private final boolean visionDriveTest = false;
+  /**
+   * NetworkTables entry for Limelight distance in feet (Elastic/Glass).
+   */
+  private final NetworkTableEntry limelightDistanceFeetEntry =
+      NetworkTableInstance.getDefault().getTable("Elastic").getEntry("Limelight Distance (ft)");
 
   /**
    * Initialize {@link SwerveDrive} with the directory provided.
@@ -160,8 +166,8 @@ public class SwerveSubsystem extends SubsystemBase
       swerveDrive.updateOdometry();
       // vision.updatePoseEstimation(swerveDrive);
     }
-    SmartDashboard.putNumber("Limelight Target Distance (ft)",
-                             getLimelightTargetDistanceFeet(Constants.VisionConstants.LIMELIGHT_NAME));
+    limelightDistanceFeetEntry.setDouble(
+        getLimelightTargetDistanceFeet(Constants.VisionConstants.LIMELIGHT_NAME));
   }
 
   @Override
