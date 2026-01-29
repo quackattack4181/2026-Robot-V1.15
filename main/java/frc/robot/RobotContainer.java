@@ -9,6 +9,8 @@ package frc.robot;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.RobotBase;
+import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
+import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -16,6 +18,7 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.Constants.OperatorConstants;
 import frc.robot.Constants.VisionConstants;
+import frc.robot.LimelightHelpers;
 import frc.robot.subsystems.swervedrive.SwerveSubsystem;
 import java.io.File;
 import com.pathplanner.lib.auto.AutoBuilder;
@@ -83,6 +86,7 @@ public class RobotContainer {
 
     autoChooser = AutoBuilder.buildAutoChooser();
     SmartDashboard.putData("Auto Selected", autoChooser);
+    configureShuffleboard();
 
     boolean isBlueAlliance = false;
 
@@ -159,6 +163,24 @@ public class RobotContainer {
   public void setMotorBrake(boolean brake)
   {
     drivebase.setMotorBrake(brake);
+  }
+
+  private void configureShuffleboard()
+  {
+    ShuffleboardTab driverTab = Shuffleboard.getTab("Driver");
+    driverTab.add("Auto Selected", autoChooser).withSize(2, 1).withPosition(0, 0);
+    driverTab.addNumber("Limelight Distance (ft)",
+                        () -> drivebase.getLimelightTargetDistanceFeet(VisionConstants.LIMELIGHT_NAME))
+             .withPosition(0, 1);
+    driverTab.addBoolean("Limelight Has Target",
+                         () -> LimelightHelpers.getTV(VisionConstants.LIMELIGHT_NAME))
+             .withPosition(1, 1);
+    driverTab.addNumber("Limelight TX", () -> LimelightHelpers.getTX(VisionConstants.LIMELIGHT_NAME))
+             .withPosition(0, 2);
+    driverTab.addNumber("Limelight TY", () -> LimelightHelpers.getTY(VisionConstants.LIMELIGHT_NAME))
+             .withPosition(1, 2);
+    driverTab.addNumber("Robot Heading (deg)", () -> drivebase.getHeading().getDegrees())
+             .withPosition(0, 3);
   }
 
 }
