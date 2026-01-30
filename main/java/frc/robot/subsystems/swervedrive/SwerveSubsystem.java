@@ -36,6 +36,8 @@ import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.networktables.NetworkTableEntry;
+import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -78,6 +80,11 @@ public class SwerveSubsystem extends SubsystemBase
    * Enable vision odometry updates while driving.
    */
   private final boolean visionDriveTest = false;
+  /**
+   * NetworkTables entry for Limelight distance in feet (Elastic/Glass).
+   */
+  private final NetworkTableEntry limelightDistanceFeetEntry =
+      NetworkTableInstance.getDefault().getTable("Elastic").getEntry("Limelight Distance (ft)");
 
   /**
    * Initialize {@link SwerveDrive} with the directory provided.
@@ -101,7 +108,7 @@ public class SwerveSubsystem extends SubsystemBase
     System.out.println("}");
 
     // Configure the Telemetry before creating the SwerveDrive to avoid unnecessary objects being created.
-    SwerveDriveTelemetry.verbosity = TelemetryVerbosity.HIGH;
+    SwerveDriveTelemetry.verbosity = TelemetryVerbosity.LOW;
     try
     {
       swerveDrive = new SwerveParser(directory).createSwerveDrive(Constants.MAX_SPEED);
@@ -159,6 +166,8 @@ public class SwerveSubsystem extends SubsystemBase
       swerveDrive.updateOdometry();
       // vision.updatePoseEstimation(swerveDrive);
     }
+    limelightDistanceFeetEntry.setDouble(
+        getLimelightTargetDistanceFeet(Constants.VisionConstants.LIMELIGHT_NAME));
   }
 
   @Override
@@ -662,8 +671,24 @@ public class SwerveSubsystem extends SubsystemBase
     {
       return Double.NaN;
     }
-    Pose3d targetPose = LimelightHelpers.getTargetPose3d_RobotSpace(limelightName);
-    return Math.hypot(targetPose.getX(), targetPose.getY());
+    Pose3d targetPose = LimelightHelpers.getTargetPose3d_CameraSpace(limelightName);
+    return Math.hypot(targetPose.getX(), targetPose.getZ());
+  }
+
+  /**
+   * Get the planar distance to the current Limelight target in feet.
+   *
+   * @param limelightName Limelight network table name.
+   * @return Distance to target in feet, or {@code Double.NaN} if no target.
+   */
+  public double getLimelightTargetDistanceFeet(String limelightName)
+  {
+    double distanceMeters = getLimelightTargetDistanceMeters(limelightName);
+    if (Double.isNaN(distanceMeters))
+    {
+      return Double.NaN;
+    }
+    return Units.metersToFeet(distanceMeters);
   }
 
   /**

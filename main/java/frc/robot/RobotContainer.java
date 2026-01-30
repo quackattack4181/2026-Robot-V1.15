@@ -9,8 +9,9 @@ package frc.robot;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.RobotBase;
-import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.networktables.NetworkTable;
+import edu.wpi.first.networktables.NetworkTableEntry;
+import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
@@ -18,7 +19,8 @@ import frc.robot.Constants.OperatorConstants;
 import frc.robot.Constants.VisionConstants;
 import frc.robot.subsystems.swervedrive.SwerveSubsystem;
 import java.io.File;
-import com.pathplanner.lib.auto.AutoBuilder;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import com.pathplanner.lib.auto.NamedCommands;
 import com.pathplanner.lib.commands.PathPlannerAuto;
 // import edu.wpi.first.wpilibj2.command.InstantCommand;
@@ -33,7 +35,11 @@ import com.pathplanner.lib.commands.PathPlannerAuto;
  */
 public class RobotContainer {
 
-  private final SendableChooser<Command> autoChooser;
+  private static final String AUTO_SELECTED_KEY = "Auto Selected";
+  private static final String AUTO_OPTIONS_KEY = "Auto Options";
+  private final NetworkTableEntry autoSelectedEntry;
+  private final NetworkTableEntry autoOptionsEntry;
+  private final Map<String, Command> autoOptions = new LinkedHashMap<>();
 
   // The robot's subsystems and commands are defined here...
   private final SwerveSubsystem drivebase = new SwerveSubsystem(new File(Filesystem.getDeployDirectory(),
@@ -81,8 +87,9 @@ public class RobotContainer {
     // Configure the trigger bindings
     configureBindings();
 
-    autoChooser = AutoBuilder.buildAutoChooser();
-    SmartDashboard.putData("Auto Selected", autoChooser);
+    NetworkTable elasticTable = NetworkTableInstance.getDefault().getTable("Elastic");
+    autoSelectedEntry = elasticTable.getEntry(AUTO_SELECTED_KEY);
+    autoOptionsEntry = elasticTable.getEntry(AUTO_OPTIONS_KEY);
 
     boolean isBlueAlliance = false;
 
@@ -91,9 +98,11 @@ public class RobotContainer {
     //         .orElse(false); // Default to Red if unknown
 
     // ✅ Add mirrored PathPlanner autos to the chooser
-    autoChooser.setDefaultOption("Middle", new PathPlannerAuto("Middle", isBlueAlliance));
-    autoChooser.addOption("Left", new PathPlannerAuto("Left", isBlueAlliance));
-    autoChooser.addOption("Right", new PathPlannerAuto("Right", isBlueAlliance));
+    autoOptions.put("Middle", new PathPlannerAuto("Middle", isBlueAlliance));
+    autoOptions.put("Left", new PathPlannerAuto("Left", isBlueAlliance));
+    autoOptions.put("Right", new PathPlannerAuto("Right", isBlueAlliance));
+    autoOptionsEntry.setStringArray(autoOptions.keySet().toArray(new String[0]));
+    autoSelectedEntry.setString("Middle");
 
     NamedCommands.registerCommand("AlignToTag", drivebase.aimAtLimelightTarget(VisionConstants.LIMELIGHT_NAME));
     
@@ -148,7 +157,8 @@ public class RobotContainer {
   public Command getAutonomousCommand() {
 
     // An example command will be run in autonomous
-    return autoChooser.getSelected();
+    String selectedAuto = autoSelectedEntry.getString("Middle");
+    return autoOptions.getOrDefault(selectedAuto, autoOptions.get("Middle"));
   }
 
   public void setDriveMode()
